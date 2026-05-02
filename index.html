@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>睡眠周期计算器</title>
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --primary-dark: #2563eb;
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #e2e8f0;
+            --text-sub: #94a3b8;
+            --border-color: #334155;
+            --input-bg: #334155;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+            background-color: var(--bg);
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--text-main);
+        }
+
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 8px;
+        }
+
+        p.subtitle {
+            color: var(--text-sub);
+            font-size: 14px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .input-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        input[type="time"] {
+            font-size: 28px;
+            text-align: center;
+            padding: 16px;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            background: var(--input-bg);
+            color: var(--text-main);
+            font-weight: 600;
+            letter-spacing: 2px;
+        }
+
+        input[type="time"]:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s, background 0.2s;
+        }
+
+        button:hover {
+            background: var(--primary-dark);
+            opacity: 1;
+        }
+
+        .results-card {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .result-item:last-child {
+            border-bottom: none;
+        }
+
+        .result-item.recommended {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(59, 130, 246, 0.05));
+            margin: 0 -16px;
+            padding: 16px;
+            border-radius: 12px;
+            border-bottom: none;
+            position: relative;
+        }
+
+        .result-item.recommended::before {
+            content: "推荐";
+            position: absolute;
+            top: -10px;
+            right: 12px;
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 20px;
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+            letter-spacing: 1px;
+        }
+
+        .time-display {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .result-item.recommended .time-display {
+            color: #10b981;
+        }
+
+        .result-info {
+            text-align: right;
+        }
+
+        .duration {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .cycle-info {
+            font-size: 12px;
+            color: var(--text-sub);
+            margin-top: 4px;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            margin-top: 20px;
+            font-size: 12px;
+            line-height: 1.8;
+        }
+
+        .footer .disclaimer {
+            color: #ffe600;
+        }
+
+        .footer a {
+            color: var(--text-sub);
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            color: var(--primary);
+        }
+
+        .footer .icp-link {
+            margin: 0 8px;
+        }
+
+        .footer .gonganbeian-icon {
+            width: 14px;
+            height: 14px;
+            vertical-align: middle;
+            margin-right: 4px;
+        }
+
+        /* PC端样式：一行显示 */
+        .footer-content {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0;
+        }
+
+        /* 移动端样式：3行居中 */
+        @media (max-width: 480px) {
+            .footer-content {
+                flex-direction: column;
+                gap: 4px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1> 睡眠周期计算器</h1>
+        <p class="subtitle">基于 90 分钟睡眠周期科学计算</p>
+        <p class="subtitle" style="margin-top: 8px;"><a href="https://www.937788.xyz/" target="_blank" style="color: #3b82f6; text-decoration: underline;">更多工具尽在忆痕发布页</a></p>
+    </header>
+
+    <!-- 醒来时间输入 -->
+    <div class="card" id="wake-section">
+        <div class="card-title"> 我想在几点醒来？</div>
+        <div class="input-wrapper">
+            <input type="time" id="wake-input" value="07:00">
+            <button onclick="calculateBedtime()">计算就寝时间</button>
+        </div>
+    </div>
+
+    <!-- 上床时间输入 -->
+    <div class="card" id="bed-section">
+        <div class="card-title">️ 我想几点上床？</div>
+        <div class="input-wrapper">
+            <input type="time" id="bed-input" value="23:00">
+            <button onclick="calculateWakeTime()">计算醒来时间</button>
+        </div>
+    </div>
+
+    <!-- 结果展示 -->
+    <div class="card results-card" id="results-card">
+        <div class="card-title" id="result-title">建议时间</div>
+        <div id="results-list"></div>
+    </div>
+
+    <!-- 底部备案信息 -->
+    <div class="footer">
+        <div class="footer-content">
+            <span class="disclaimer">本站内容仅供学习和交流，非商业用途</span>
+            <a href="https://beian.miit.gov.cn/" target="_blank" class="icp-link">浙ICP备2025187466号</a>
+            <a href="https://www.beian.gov.cn/portal/registerSystemInfo?recordcode=33030402001483" target="_blank">
+                <img src="https://www.937788.xyz/gonganbeian.png" alt="公安备案" class="gonganbeian-icon">
+                浙公网安备33030402001483号
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 睡眠参数
+    const CYCLE = 90;    // 每个周期 90 分钟
+    const BUFFER = 15;   // 15 分钟入睡前缓冲时间
+
+    // 格式化时间的辅助函数
+    function formatTime(date) {
+        const h = String(date.getHours()).padStart(2, '0');
+        const m = String(date.getMinutes()).padStart(2, '0');
+        return `${h}:${m}`;
+    }
+
+    // 获取相对日期的辅助函数
+    function getRelativeDay(date) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const target = new Date(date);
+        target.setHours(0, 0, 0, 0);
+        const diffDays = Math.round((target - today) / (24 * 60 * 60 * 1000));
+        
+        const dayNames = ["昨天", "今天", "明天", "后天"];
+        if (diffDays < -1) return "前几天";
+        if (diffDays > 2) return "几天后";
+        return dayNames[diffDays + 1];
+    }
+
+    // 计算就寝时间（从给定时间倒推）
+    function calculateBedtimeForWakeTime(wakeHours, wakeMinutes) {
+        const now = new Date();
+        const baseDate = new Date();
+        baseDate.setHours(wakeHours, wakeMinutes, 0, 0);
+        
+        // 如果醒来时间已经过了（针对"我想几点醒来"场景），则视为明天
+        if (baseDate <= now) {
+            baseDate.setDate(baseDate.getDate() + 1);
+        }
+        
+        const results = [];
+        
+        // 计算 3-6 个周期的建议就寝时间（倒序，6到3）
+        for (let cycles = 6; cycles >= 3; cycles--) {
+            const sleepDate = new Date(baseDate);
+            // 从醒来时间倒推：醒来时间 - 周期数*90 + 缓冲
+            sleepDate.setHours(sleepDate.getHours() - (cycles * CYCLE) / 60);
+            sleepDate.setMinutes(sleepDate.getMinutes() - ((cycles * CYCLE) % 60) + BUFFER);
+            
+            results.push({
+                time: sleepDate,
+                cycles: cycles,
+                duration: cycles * CYCLE, // 总睡眠时长（不含缓冲）
+                dateLabel: ""
+            });
+        }
+        
+        return results;
+    }
+
+    // 计算醒来时间（从给定时间正推）
+    function calculateWakeTimeForBedtime(bedHours, bedMinutes) {
+        const baseDate = new Date();
+        baseDate.setHours(bedHours, bedMinutes, 0, 0);
+        // 这是上床的时间
+        
+        const results = [];
+        
+        // 计算 3-6 个周期的建议醒来时间（倒序，6到3）
+        for (let cycles = 6; cycles >= 3; cycles--) {
+            const wakeDate = new Date(baseDate);
+            // 从上床时间正推：上床时间 + 缓冲 + 周期数*90
+            wakeDate.setHours(wakeDate.getHours() + (cycles * CYCLE) / 60);
+            wakeDate.setMinutes(wakeDate.getMinutes() + ((cycles * CYCLE) % 60) + BUFFER);
+            
+            results.push({
+                time: wakeDate,
+                cycles: cycles,
+                duration: cycles * CYCLE + BUFFER, // 包含缓冲的总时长
+                dateLabel: ""
+            });
+        }
+        
+        return results;
+    }
+
+    // 主函数：计算就寝时间
+    function calculateBedtime() {
+        const wakeInput = document.getElementById('wake-input').value;
+        if (!wakeInput) return;
+        
+        const [wakeH, wakeM] = wakeInput.split(':').map(Number);
+        const results = calculateBedtimeForWakeTime(wakeH, wakeM);
+        
+        displayResults(results, "就寝时间", wakeInput);
+    }
+
+    // 主函数：计算醒来时间
+    function calculateWakeTime() {
+        const bedInput = document.getElementById('bed-input').value;
+        if (!bedInput) return;
+        
+        const [bedH, bedM] = bedInput.split(':').map(Number);
+        const results = calculateWakeTimeForBedtime(bedH, bedM);
+        
+        displayResults(results, "醒来时间", bedInput);
+    }
+
+    // 显示结果
+    function displayResults(results, labelName, inputTime) {
+        const list = document.getElementById('results-list');
+        const card = document.getElementById('results-card');
+        const title = document.getElementById('result-title');
+        
+        list.innerHTML = '';
+        
+        // 设置标题
+        title.innerHTML = `建议时间：${labelName}`;
+        
+        results.forEach((item, index) => {
+            const timeStr = formatTime(item.time);
+            const relativeDay = getRelativeDay(item.time);
+            const durationDays = Math.floor(item.duration / 1440);
+            const durationHrs = Math.floor((item.duration % 1440) / 60);
+            const durationMins = item.duration % 60;
+            
+            let durationStr = "";
+            if (durationDays > 0) {
+                durationStr = `${durationDays}天`;
+                if (durationHrs > 0) durationStr += ` ${durationHrs}时`;
+            } else {
+                durationStr = `${durationHrs}时${durationMins > 0 ? durationMins + '分' : ''}`;
+            }
+            
+            // 6个周期（9小时睡眠）为推荐选项
+            const isRecommended = item.cycles === 6;
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'result-item' + (isRecommended ? ' recommended' : '');
+            itemDiv.innerHTML = `
+                <span class="time-display">${timeStr}</span>
+                <div class="result-info">
+                    <span class="duration">${durationStr}</span>
+                    <span class="cycle-info">${item.cycles}个周期 ${relativeDay}</span>
+                </div>
+            `;
+            list.appendChild(itemDiv);
+        });
+        
+        card.style.display = 'block';
+    }
+</script>
+</body>
+</html>
